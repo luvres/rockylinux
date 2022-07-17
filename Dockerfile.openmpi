@@ -1,0 +1,105 @@
+FROM rockylinux:8.6
+#FROM scratch
+#ADD rocky-8.5-docker-x86_64.tar.xz /
+MAINTAINER Leonardo Loures <luvres@hotmail.com>
+
+ARG APPTAINER_MAJOR="v1.0.3"
+ARG APPTAINER_VERSION="1.0.3-1"
+ARG TIMEZONE="America/Sao_Paulo"
+
+RUN \
+  dnf update -y \
+  && dnf install -y --allowerasing \
+    coreutils cpio \
+    dhclient \
+    e2fsprogs ethtool \
+    findutils \
+    initscripts ipmitool iproute \
+    kernel-core \
+    net-tools network-scripts nfs-utils \
+    openssh-clients openssh-server \
+    pciutils psmisc \
+    rsync rsyslog \
+    strace \
+    wget which words \
+  \
+  # Install OpenMPI
+  && sed -i '/enable/s/0/1/' /etc/yum.repos.d/Rocky-PowerTools.repo \
+  && sed -i '/enable/s/0/1/' /etc/yum.repos.d/Rocky-Plus.repo \
+  \
+  && dnf install -y epel-release \
+  && dnf install -y \
+    openmpi mpitests-openmpi blacs-openmpi blacs-openmpi-devel blacs-openmpi-static combblas-openmpi-devel \
+    psblas3-openmpi psblas3-openmpi-devel combblas-openmpi-devel amg4psblas-openmpi MUMPS-openmpi MUMPS-openmpi-examples \
+    dl_poly-openmpi elk-openmpi ga-openmpi ga-openmpi-devel ga-openmpi-static hdf5-openmpi hdf5-openmpi-devel hdf5-openmpi-static \
+    hypre-openmpi hypre-openmpi-devel mld2p4-openmpi \
+    netcdf-cxx4-openmpi netcdf-cxx4-openmpi-devel netcdf-cxx4-openmpi-static netcdf-fortran-openmpi netcdf-fortran-openmpi-devel \
+    netcdf-fortran-openmpi-static netcdf-openmpi netcdf-openmpi-devel netcdf-openmpi-static \
+    nwchem-openmpi paraview-openmpi-devel quantum-espresso-openmpi scalapack-openmpi scalapack-openmpi-devel scalapack-openmpi-static scalasca-openmpi \
+    scorep-openmpi scorep-openmpi-config scorep-openmpi-libs superlu_dist-openmpi superlu_dist-openmpi-devel petsc-openmpi  \
+    sundials-openmpi sundials-openmpi-devel amg4psblas-openmpi-devel gromacs-openmpi lammps-openmpi lammps-openmpi-devel \
+    boost169-graph-openmpi boost169-openmpi python3-espresso-openmpi python3-mpi4py-openmpi \
+  \
+  # Config OpenMPI
+  && { \
+  echo 'export PATH=$PATH:/usr/lib64/openmpi/bin'; \
+  echo 'export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib'; \
+  echo 'export PKG_CONFIG_PATH=/usr/lib64/openmpi/lib/pkgconfig'; \
+  echo 'export MPI_BIN=/usr/lib64/openmpi/bin'; \
+  echo 'export MPI_SYSCONFIG=/etc/openmpi-x86_64'; \
+  echo 'export MPI_FORTRAN_MOD_DIR=/usr/lib64/gfortran/modules/openmpi'; \
+  echo 'export MPI_INCLUDE=/usr/include/openmpi-x86_64'; \
+  echo 'export MPI_LIB=/usr/lib64/openmpi/lib'; \
+  echo 'export MPI_MAN=/usr/share/man/openmpi-x86_64' \
+  echo 'export MPI_PYTHON3_SITEARCH=/usr/lib64/python3.6/site-packages/openmpi'; \
+  echo 'export MPI_COMPILER=openmpi-x86_64'; \
+  echo 'export MPI_SUFFIX=_openmpi'; \
+  echo 'export MPI_HOME=/usr/lib64/openmpi'; \
+  } > /etc/profile.d/openmpi.sh \
+  \
+  && echo '/usr/lib64/openmpi/lib' >/etc/ld.so.conf.d/openmpi.conf \
+  \
+  # Install Apptainer
+  && dnf -y install https://github.com/apptainer/apptainer/releases/download/${APPTAINER_MAJOR}/apptainer-${APPTAINER_VERSION}.x86_64.rpm \
+  \
+  && dnf clean all \
+  \
+  # Config Rocky wirewulf
+  && sed -i 's/^root:.:/root::/g' /etc/passwd \
+  && sed -i -e '/^account.*pam_unix\.so\s*$/s/\s*$/\ broken_shadow/' /etc/pam.d/system-auth \
+  && sed -i -e '/^account.*pam_unix\.so\s*$/s/\s*$/\ broken_shadow/' /etc/pam.d/password-auth \
+  && rm -f /etc/sysconfig/network-scripts/ifcfg-e* \
+  \
+  && systemctl unmask \
+    console-getty.service \
+    dev-hugepages.mount \
+    getty.target \
+    sys-fs-fuse-connections.mount \
+    systemd-logind.service \
+    systemd-remount-fs.service \
+  && systemctl enable network \
+  \
+  && touch /etc/sysconfig/disable-deprecation-warnings \
+  && mkdir -p /etc/warewulf \
+  && touch /etc/warewulf/excludes \
+  && touch /etc/warewulf/container_exit.sh \
+  && chmod +x /etc/warewulf/container_exit.sh \
+  && echo "#!/bin/sh" > /etc/warewulf/container_exit.sh \
+  && echo "set -x" >> /etc/warewulf/container_exit.sh \
+  && echo "LANG=C" >> /etc/warewulf/container_exit.sh \
+  && echo "LC_CTYPE=C" >> /etc/warewulf/container_exit.sh \
+  && echo "export LANG LC_CTYPE" >> /etc/warewulf/container_exit.sh \
+  && echo "dnf clean all" >> /etc/warewulf/container_exit.sh \
+  && echo "/boot/" > /etc/warewulf/excludes \
+  && echo "/usr/share/GeoIP" >> /etc/warewulf/excludes \
+  \
+  # Config SSH
+  && sed -i '/StrictHostKeyChecking/s/#   //' /etc/ssh/ssh_config \
+  && sed -i '/StrictHostKeyChecking/s/ask/no/' /etc/ssh/ssh_config \
+  && sed -i '/BatchMode/s/#   //' /etc/ssh/ssh_config \
+  && sed -i '/BatchMode/s/no/yes/' /etc/ssh/ssh_config \
+  \
+  # Localtime
+  && ln -fs /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
+
+CMD ["/bin/bash"]

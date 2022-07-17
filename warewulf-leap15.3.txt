@@ -1,0 +1,44 @@
+Analyzing izone/warewulf:leap-15.3
+Docker Version: 20.10.12-ce
+GraphDriver: overlay2
+Environment Variables
+|PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+Image user
+|User is root
+
+Potential secrets:
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-cmdline.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-initqueue.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-mount.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-pre-mount.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-pre-pivot.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-pre-trigger.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-pre-udev.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match usr/lib/dracut/modules.d/98dracut-systemd/dracut-shutdown.service.8.asc Potential cryptographic key bundle \.asc$ 1383c30872476a8cb614fc2dc6f059ce0eced8c9697a10b0072845e92c144fea/layer.tar
+|Found match etc/ssh/ssh_config Client SSH Config .?ssh_config[\s\S]* 3304e968898950d24dd410f377c23328faca2a7cf9cdb7730607b5ad3cae0b3d/layer.tar
+|Found match etc/ssh/sshd_config Server SSH Config .?sshd_config[\s\S]* 3304e968898950d24dd410f377c23328faca2a7cf9cdb7730607b5ad3cae0b3d/layer.tar
+|Found match etc/profile.d/csh.ssh SSH file \.ssh$ 60a93ad0d041553ca5295c18f23dda1b1e3f53d9732ea0443246dd1668d7c67a/layer.tar
+|Found match etc/profile.d/sh.ssh SSH file \.ssh$ 60a93ad0d041553ca5295c18f23dda1b1e3f53d9732ea0443246dd1668d7c67a/layer.tar
+|Found match usr/lib/rpm/gnupg/keys/gpg-pubkey-39db7c82-5847eb1f.asc Potential cryptographic key bundle \.asc$ 60a93ad0d041553ca5295c18f23dda1b1e3f53d9732ea0443246dd1668d7c67a/layer.tar
+|Found match usr/lib/rpm/gnupg/keys/gpg-pubkey-3dbdc284-53674dd4.asc Potential cryptographic key bundle \.asc$ 60a93ad0d041553ca5295c18f23dda1b1e3f53d9732ea0443246dd1668d7c67a/layer.tar
+|Found match usr/lib/rpm/gnupg/keys/gpg-pubkey-65176565-61a0ee8f.asc Potential cryptographic key bundle \.asc$ 60a93ad0d041553ca5295c18f23dda1b1e3f53d9732ea0443246dd1668d7c67a/layer.tar
+Dockerfile:
+COPY file:999c5558f3a017f19c35315006d56ea6bd8ca86b3e65e12b25a248f10a8e9324 in /usr/local/sbin/obs-docker-support
+
+RUN obs-docker-support --install
+RUN zypper install -y patterns-base-enhanced_base openSUSE-release
+RUN zypper install -y bind-utils nfs-client iputils vim sudo less which ipmitool rsync strace chrony tcpdump timezone wget curl e2fsprogs btrfsprogs iproute2
+RUN systemctl enable sshd
+RUN systemctl enable chronyd
+RUN obs-docker-support --uninstall
+LABEL org.openbuildservice.disturl=obs://build.opensuse.org/science:warewulf:Leap-15.3/containers/fcb5f0ec2fe0bc723b2536a03a2704c1-base
+
+COPY file:999c5558f3a017f19c35315006d56ea6bd8ca86b3e65e12b25a248f10a8e9324 in /usr/local/sbin/obs-docker-support
+
+RUN obs-docker-support --install
+RUN zypper install -y openSUSE-release kernel
+RUN obs-docker-support --uninstall
+LABEL org.openbuildservice.disturl=obs://build.opensuse.org/science:warewulf:Leap-15.3/containers/0bed96f35ac3d74f3406a3cbde02e8b7-kernel
+
+

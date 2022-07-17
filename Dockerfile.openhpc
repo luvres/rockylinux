@@ -1,0 +1,79 @@
+FROM rockylinux:8.6
+#FROM scratch
+#ADD rocky-8.5-docker-x86_64.tar.xz /
+MAINTAINER Leonardo Loures <luvres@hotmail.com>
+
+ARG APPTAINER_MAJOR="v1.0.3"
+ARG APPTAINER_VERSION="1.0.3-1"
+ARG TIMEZONE="America/Sao_Paulo"
+
+RUN \
+  dnf update -y \
+  && dnf install -y --allowerasing \
+    coreutils cpio \
+    dhclient \
+    e2fsprogs ethtool \
+    findutils \
+    initscripts ipmitool iproute \
+    kernel-core \
+    net-tools network-scripts nfs-utils \
+    openssh-clients openssh-server \
+    pciutils psmisc \
+    rsync rsyslog \
+    strace \
+    wget which words \
+    \
+    kernel-modules \
+    dnf-plugins-core \
+    http://repos.openhpc.community/OpenHPC/2/CentOS_8/$(uname -m)/ohpc-release-2-1.el8.$(uname -m).rpm \
+    \
+  && dnf config-manager --set-enabled powertools \
+  && dnf -y install ohpc-base-compute ohpc-slurm-client slurm-libpmi-ohpc lmod-ohpc chrony \
+  \
+  # Install Apptainer
+  && dnf -y install https://github.com/apptainer/apptainer/releases/download/${APPTAINER_MAJOR}/apptainer-${APPTAINER_VERSION}.x86_64.rpm \
+  \
+  && dnf clean all \
+  \
+  # Config Rocky wirewulf
+  && sed -i 's/^root:.:/root::/g' /etc/passwd \
+  && sed -i -e '/^account.*pam_unix\.so\s*$/s/\s*$/\ broken_shadow/' /etc/pam.d/system-auth \
+  && sed -i -e '/^account.*pam_unix\.so\s*$/s/\s*$/\ broken_shadow/' /etc/pam.d/password-auth \
+  && rm -f /etc/sysconfig/network-scripts/ifcfg-e* \
+  \
+  && systemctl unmask \
+    console-getty.service \
+    dev-hugepages.mount \
+    getty.target \
+    sys-fs-fuse-connections.mount \
+    systemd-logind.service \
+    systemd-remount-fs.service \
+  && systemctl enable network \
+  \
+  && touch /etc/sysconfig/disable-deprecation-warnings \
+  && mkdir -p /etc/warewulf \
+  && touch /etc/warewulf/excludes \
+  && touch /etc/warewulf/container_exit.sh \
+  && chmod +x /etc/warewulf/container_exit.sh \
+  && echo "#!/bin/sh" > /etc/warewulf/container_exit.sh \
+  && echo "set -x" >> /etc/warewulf/container_exit.sh \
+  && echo "LANG=C" >> /etc/warewulf/container_exit.sh \
+  && echo "LC_CTYPE=C" >> /etc/warewulf/container_exit.sh \
+  && echo "export LANG LC_CTYPE" >> /etc/warewulf/container_exit.sh \
+  && echo "dnf clean all" >> /etc/warewulf/container_exit.sh \
+  && echo "/boot/" > /etc/warewulf/excludes \
+  && echo "/usr/share/GeoIP" >> /etc/warewulf/excludes \
+  \
+  # Config SSH
+  && sed -i '/StrictHostKeyChecking/s/#   //' /etc/ssh/ssh_config \
+  && sed -i '/StrictHostKeyChecking/s/ask/no/' /etc/ssh/ssh_config \
+  && sed -i '/BatchMode/s/#   //' /etc/ssh/ssh_config \
+  && sed -i '/BatchMode/s/no/yes/' /etc/ssh/ssh_config \
+  \
+  # Localtime
+  && ln -fs /usr/share/zoneinfo/${TIMEZONE} /etc/localtime 
+  # Enable Slurm
+#RUN systemctl enable munge \
+#  && systemctl enable slurmd
+
+CMD ["/bin/bash"]

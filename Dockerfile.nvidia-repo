@@ -1,0 +1,43 @@
+FROM izone/rockylinux:warewulf
+MAINTAINER Leonardo Loures <luvres@hotmail.com>
+
+ARG NVIDIA_VERSION="515.57"
+
+RUN \
+  dnf install -y \
+      'dnf-command(config-manager)' \
+      epel-release \
+      kernel-devel-$(uname -r) \
+      kernel-headers-$(uname -r) \
+  \
+  # Adding the official Nvidia drivers repository
+  && dnf config-manager --add-repo \
+      https://developer.download.nvidia.com/compute/cuda/repos/rhel8/$(uname -m)/cuda-rhel8.repo \
+  \
+  && dnf install -y \
+      nvidia-driver \
+      nvidia-settings \
+      cuda-driver \
+  \
+  && dnf clean all
+  
+  
+##dnf install 'dnf-command(config-manager)'  
+##dnf config-manager --set-enabled powertools
+#sudo dnf install -y epel-release
+##dnf install -y kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig
+##RUN wget -c https://us.download.nvidia.com/XFree86/Linux-$(uname -m)/${NVIDIA_VERSION}/NVIDIA-Linux-$(uname -m)-${NVIDIA_VERSION}.run
+
+#sudo rmmod nouveau
+##sudo rmmod ttm
+##sudo rmmod drm_kms_helper
+##sudo rmmod drm
+
+#sudo dnf install -y kernel-devel-$(uname -r) kernel-headers-$(uname -r) dkms 
+
+##curl -Lo NVIDIA-Linux-$(uname -m)-${NVIDIA_VERSION}.run https://us.download.nvidia.com/XFree86/Linux-$(uname -m)/${NVIDIA_VERSION}/NVIDIA-Linux-$(uname -m)-${NVIDIA_VERSION}.run
+
+#sudo bash ./NVIDIA-Linux-$(uname -m)-*.run --accept-license \
+#--no-questions --ui=none --silent \
+#--run-nvidia-xconfig --dkms --disable-nouveau
+

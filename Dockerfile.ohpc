@@ -1,0 +1,19 @@
+FROM izone/rockylinux:warewulf
+MAINTAINER Leonardo Loures <luvres@hotmail.com>
+
+#ARG UID_MUNGE=1001
+
+RUN dnf -y install \
+  kernel-modules \
+  dnf-plugins-core \
+  http://repos.openhpc.community/OpenHPC/2/CentOS_8/$(uname -m)/ohpc-release-2-1.el8.$(uname -m).rpm \
+  && dnf config-manager --set-enabled powertools \
+  && dnf -y install ohpc-base-compute ohpc-slurm-client slurm-libpmi-ohpc lmod-ohpc chrony \
+  && dnf -y clean all \
+  \
+  && systemctl enable munge \
+#  && usermod -u $UID_MUNGE munge \
+#  && chown -R munge. /etc/munge /var/log/munge /var/lib/munge \
+  \
+  && systemctl enable slurmd 
+  
